@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إعمارنا | منصة إعادة الإعمار</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, orderBy, query, serverTimestamp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // ======================================================
+  // 🔧 ضع هنا إعدادات Firebase الخاصة بك
+  // (راجع ملف SETUP.md للتعليمات)
+  // ======================================================
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // حفظ بلاغ جديد
+  window.saveReport = async function(reportData) {
+    try {
+      const docRef = await addDoc(collection(db, "reports"), {
+        ...reportData,
+        createdAt: serverTimestamp(),
+        status: "pending"
+      });
+      return { success: true, id: docRef.id };
+    } catch (e) {
+      console.error("خطأ في الحفظ:", e);
+      return { success: false, error: e.message };
+    }
+  };
+
+  // جلب جميع البلاغات
+  window.loadReports = async function() {
+    try {
+      const q = query(collection(db, "reports"), orderBy("createdAt", "desc"));
+      const snap = await getDocs(q);
+      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) {
+      console.error("خطأ في الجلب:", e);
+      return [];
+    }
+  };
+
+  // إشعار جاهزية Firebase
+  window.firebaseReady = true;
+  document.dispatchEvent(new Event('firebaseReady'));
+</script>
+
+<style>
+:root {
+  --navy: #0a1628;
+  --blue: #1a3a6b;
+  --royal: #1e4db7;
+  --sky: #2d6be4;
+  --accent: #4a9eff;
+  --gold: #c9a227;
+  --white: #ffffff;
+  --gray-light: #f4f7fc;
+  --gray: #e8eef8;
+  --text-muted: #6b7c9e;
+  --success: #1a7a4a;
+  --warning: #c9a227;
+  --danger: #b03030;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Tajawal', sans-serif;
+  background: var(--gray-light);
+  color: var(--navy);
+  overflow-x: hidden;
+}
+
+/* NAV */
+nav {
+  background: var(--navy);
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 62px;
+  position: fixed;
+  top:0; left:0; right:0;
+  z-index: 1000;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+}
+
+.nav-logo {
+  display: flex; align-items: center; gap: 0.6rem; cursor: pointer;
+}
+
+.nav-logo-icon {
+  width:36px; height:36px;
+  background: linear-gradient(135deg, var(--royal), var(--accent));
+  border-radius:9px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.1rem;
+}
+
+.nav-logo-text {
+  font-family:'Cairo',sans-serif; font-weight:900; font-size:1.25rem; color:white;
+}
+.nav-logo-text span { color:var(--accent); }
+
+.nav-links { display:flex; gap:0.2rem; list-style:none; }
+.nav-links a {
+  color:rgba(255,255,255,0.7); text-decoration:none;
+  padding:0.45rem 0.85rem; border-radius:8px;
+  font-size:0.88rem; font-weight:500; cursor:pointer; transition:all 0.2s;
+}
+.nav-links a:hover, .nav-links a.active { background:rgba(255,255,255,0.12); color:white; }
+
+.nav-right { display:flex; gap:0.6rem; align-items:center; }
+
+.btn-nav-outline {
+  background:transparent; border:1.5px solid rgba(255,255,255,0.3);
+  color:white; padding:0.38rem 1rem; border-radius:8px;
+  font-family:'Tajawal',sans-serif; font-size:0.85rem; font-weight:600;
+  cursor:pointer; transition:all 0.2s;
+}
+.btn-nav-outline:hover { background:rgba(255,255,255,0.1); }
+
+.btn-nav-fill {
+  background:linear-gradient(135deg,var(--royal),var(--sky));
+  border:none; color:white; padding:0.4rem 1.1rem; border-radius:8px;
+  font-family:'Tajawal',sans-serif; font-size:0.85rem; font-weight:700;
+  cursor:pointer; box-shadow:0 4px 12px rgba(30,77,183,0.4); transition:all 0.2s;
+}
+.btn-nav-fill:hover { transform:translateY(-1px); }
+
+/* PAGES */
+.page { display:none; padding-top:62px; min-height:100vh; }
+.page.active { display:block; }
+
+/* ===== HOME ===== */
+.hero {
+  background: linear-gradient(155deg, var(--navy) 0%, var(--blue) 55%, #0d1f3c 100%);
+  padding: 4.5rem 1.5rem 3.5rem;
+  position:relative; overflow:hidden;
+}
+.hero::before {
+  content:''; position:absolute; top:-120px; right:-120px;
+  width:500px; height:500px;
+  background:radial-gradient(circle,rgba(74,158,255,0.1) 0%,transparent 70%);
+  border-radius:50%;
+}
+.hero-inner { max-width:860px; margin:0 auto; text-align:center; position:relative; z-index:1; }
+
+.hero-badge {
+  display:inline-flex; align-items:center; gap:0.5rem;
+  background:rgba(74,158,255,0.15); border:1px solid rgba(74,158,255,0.3);
+  color:var(--accent); padding:0.38rem 1rem; border-radius:50px;
+  font-size:0.82rem; font-weight:600; margin-bottom:1.4rem;
+  animation: fadeUp 0.5s ease both;
+}
+
+.hero h1 {
+  font-family:'Cairo',sans-serif;
+  font-size:clamp(2rem,5vw,3.5rem);
+  font-weight:900; color:white; line-height:1.2; margin-bottom:1rem;
+  animation: fadeUp 0.6s ease 0.1s both;
+}
+.hero h1 span { color:var(--accent); }
+
+.hero p {
+  font-size:1rem; color:rgba(255,255,255,0.7); max-width:580px;
+  margin:0 auto 2rem; line-height:1.85;
+  animation: fadeUp 0.6s ease 0.2s both;
+}
+
+.hero-btns {
+  display:flex; gap:0.8rem; justify-content:center; flex-wrap:wrap;
+  animation: fadeUp 0.6s ease 0.3s both;
+}
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(20px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+.btn-main {
+  background:linear-gradient(135deg,var(--royal),var(--sky));
+  color:white; border:none; padding:0.8rem 2rem; border-radius:11px;
+  font-family:'Tajawal',sans-serif; font-size:0.98rem; font-weight:700;
+  cursor:pointer; box-shadow:0 8px 22px rgba(30,77,183,0.45); transition:all 0.2s;
+}
+.btn-main:hover { transform:translateY(-2px); box-shadow:0 12px 28px rgba(30,77,183,0.55); }
+
+.btn-outline {
+  background:rgba(255,255,255,0.08); color:white;
+  border:1.5px solid rgba(255,255,255,0.25); padding:0.8rem 2rem; border-radius:11px;
+  font-family:'Tajawal',sans-serif; font-size:0.98rem; font-weight:600;
+  cursor:pointer; transition:all 0.2s; backdrop-filter:blur(6px);
+}
+.btn-outline:hover { background:rgba(255,255,255,0.15); }
+
+/* Stats */
+.stats-bar {
+  background:white; border-bottom:1px solid var(--gray); padding:1.4rem 1.5rem;
+}
+.stats-inner {
+  max-width:860px; margin:0 auto;
+  display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; text-align:center;
+}
+.stat-item { padding:0.6rem; }
+.stat-num { font-family:'Cairo',sans-serif; font-size:1.9rem; font-weight:900; color:var(--royal); line-height:1; }
+.stat-lbl { font-size:0.78rem; color:var(--text-muted); margin-top:0.25rem; font-weight:500; }
+
+/* Sections */
+.section { padding:3rem 1.5rem; }
+.section-white { background:white; }
+.section-navy { background:var(--navy); }
+.section-inner { max-width:960px; margin:0 auto; }
+.sec-title { font-family:'Cairo',sans-serif; font-size:1.6rem; font-weight:900; color:var(--navy); margin-bottom:0.4rem; }
+.sec-title-white { color:white; }
+.sec-sub { font-size:0.9rem; color:var(--text-muted); margin-bottom:1.8rem; }
+.sec-sub-white { color:rgba(255,255,255,0.6); }
+
+.cards-3 { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:1.1rem; }
+.card {
+  background:white; border-radius:15px; padding:1.5rem;
+  border:1px solid var(--gray); transition:all 0.22s;
+}
+.card:hover { transform:translateY(-3px); box-shadow:0 10px 28px rgba(30,77,183,0.1); border-color:rgba(30,77,183,0.2); }
+.card-icon { width:46px; height:46px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; margin-bottom:0.9rem; }
+.ic-blue { background:rgba(30,77,183,0.1); }
+.ic-green { background:rgba(26,122,74,0.1); }
+.ic-gold { background:rgba(201,162,39,0.1); }
+.ic-red { background:rgba(176,48,48,0.1); }
+.card h3 { font-family:'Cairo',sans-serif; font-size:1rem; font-weight:700; color:var(--navy); margin-bottom:0.45rem; }
+.card p { font-size:0.85rem; color:var(--text-muted); line-height:1.72; }
+
+/* Workflow */
+.steps-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:0.9rem; margin-top:1.8rem; }
+.step-card {
+  background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
+  border-radius:13px; padding:1.3rem 0.9rem; text-align:center; transition:all 0.2s;
+}
+.step-card:hover { background:rgba(255,255,255,0.1); }
+.step-num {
+  width:34px; height:34px; border-radius:50%;
+  background:linear-gradient(135deg,var(--royal),var(--sky));
+  display:flex; align-items:center; justify-content:center;
+  font-weight:700; font-size:0.88rem; color:white; margin:0 auto 0.7rem;
+}
+.step-card h4 { font-size:0.9rem; font-weight:700; color:white; margin-bottom:0.35rem; }
+.step-card p { font-size:0.76rem; color:rgba(255,255,255,0.58); line-height:1.6; }
+
+/* ===== DASHBOARD ===== */
+.dash-wrap { display:flex; min-height:calc(100vh - 62px); }
+
+.sidebar {
+  width:210px; background:var(--navy); padding:1.3rem 0;
+  flex-shrink:0; position:sticky; top:62px; height:calc(100vh - 62px); overflow-y:auto;
+}
+.sb-sec { padding:0 0.9rem; margin-bottom:1.3rem; }
+.sb-lbl { font-size:0.68rem; font-weight:700; color:rgba(255,255,255,0.32); text-transform:uppercase; letter-spacing:1.4px; padding:0 0.5rem; margin-bottom:0.45rem; }
+.sb-link {
+  display:flex; align-items:center; gap:0.65rem;
+  padding:0.6rem 0.75rem; border-radius:9px;
+  color:rgba(255,255,255,0.62); font-size:0.86rem; font-weight:500;
+  cursor:pointer; transition:all 0.2s; margin-bottom:0.18rem;
+}
+.sb-link:hover { background:rgba(255,255,255,0.08); color:white; }
+.sb-link.active { background:linear-gradient(135deg,var(--royal),var(--sky)); color:white; box-shadow:0 4px 12px rgba(30,77,183,0.3); }
+.notif-dot { width:7px; height:7px; background:var(--danger); border-radius:50%; display:inline-block; margin-right:0.25rem; }
+
+.dash-body { flex:1; padding:1.6rem; background:var(--gray-light); overflow-y:auto; }
+
+.dash-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.6rem; flex-wrap:wrap; gap:0.8rem; }
+.dash-heading { font-family:'Cairo',sans-serif; font-size:1.45rem; font-weight:900; color:var(--navy); }
+.dash-sub { font-size:0.82rem; color:var(--text-muted); margin-top:0.18rem; }
+
+.kpi-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(165px,1fr)); gap:1rem; margin-bottom:1.6rem; }
+.kpi {
+  background:white; border-radius:13px; padding:1.2rem 1.3rem;
+  border:1px solid var(--gray); position:relative; overflow:hidden; transition:all 0.2s;
+}
+.kpi:hover { box-shadow:0 6px 20px rgba(0,0,0,0.06); }
+.kpi-top2 { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.7rem; }
+.kpi-ico { width:38px; height:38px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:1rem; }
+.kpi-b .kpi-ico { background:rgba(30,77,183,0.1); }
+.kpi-g .kpi-ico { background:rgba(26,122,74,0.1); }
+.kpi-y .kpi-ico { background:rgba(201,162,39,0.1); }
+.kpi-r .kpi-ico { background:rgba(176,48,48,0.1); }
+.kpi-badge { font-size:0.72rem; font-weight:700; padding:0.18rem 0.45rem; border-radius:6px; }
+.up { background:rgba(26,122,74,0.1); color:var(--success); }
+.down { background:rgba(176,48,48,0.1); color:var(--danger); }
+.kpi-val { font-family:'Cairo',sans-serif; font-size:1.85rem; font-weight:900; color:var(--navy); line-height:1; margin-bottom:0.25rem; }
+.kpi-lbl { font-size:0.79rem; color:var(--text-muted); font-weight:500; }
+.mini-bar { height:4px; background:var(--gray); border-radius:10px; margin-top:0.7rem; overflow:hidden; }
+.mini-fill { height:100%; border-radius:10px; }
+.mf-b { background:linear-gradient(90deg,var(--royal),var(--sky)); }
+.mf-g { background:linear-gradient(90deg,#1a7a4a,#2ecc71); }
+.mf-y { background:linear-gradient(90deg,#c9a227,#f0c040); }
+.mf-r { background:linear-gradient(90deg,#b03030,#e05050); }
+
+/* Table card */
+.tbl-card { background:white; border-radius:15px; border:1px solid var(--gray); overflow:hidden; margin-bottom:1.4rem; }
+.tbl-head { padding:1.1rem 1.4rem; border-bottom:1px solid var(--gray); display:flex; align-items:center; justify-content:space-between; }
+.tbl-title { font-family:'Cairo',sans-serif; font-size:0.98rem; font-weight:700; color:var(--navy); }
+.btn-sm { background:var(--gray-light); border:1px solid var(--gray); color:var(--blue); padding:0.28rem 0.85rem; border-radius:7px; font-family:'Tajawal',sans-serif; font-size:0.78rem; font-weight:600; cursor:pointer; transition:all 0.2s; }
+.btn-sm:hover { background:var(--gray); }
+table { width:100%; border-collapse:collapse; }
+th { background:var(--gray-light); padding:0.7rem 1.1rem; text-align:right; font-size:0.76rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; border-bottom:1px solid var(--gray); }
+td { padding:0.85rem 1.1rem; font-size:0.86rem; color:var(--navy); border-bottom:1px solid var(--gray); }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:var(--gray-light); }
+.badge { display:inline-flex; align-items:center; gap:0.25rem; padding:0.22rem 0.65rem; border-radius:20px; font-size:0.72rem; font-weight:700; }
+.b-blue { background:rgba(30,77,183,0.1); color:var(--royal); }
+.b-green { background:rgba(26,122,74,0.1); color:var(--success); }
+.b-gold { background:rgba(201,162,39,0.12); color:#8a6a10; }
+.b-red { background:rgba(176,48,48,0.1); color:var(--danger); }
+.b-gray { background:var(--gray); color:var(--text-muted); }
+
+/* Loading */
+.loading-row td { text-align:center; color:var(--text-muted); font-size:0.9rem; padding:2rem; }
+
+/* ===== REPORT FORM ===== */
+.report-wrap { max-width:700px; margin:0 auto; padding:1.8rem 1.2rem; }
+.rpt-header { background:linear-gradient(135deg,var(--navy),var(--blue)); color:white; border-radius:18px; padding:1.8rem; margin-bottom:1.8rem; position:relative; overflow:hidden; }
+.rpt-header::after { content:'📋'; position:absolute; left:1.2rem; bottom:-8px; font-size:4.5rem; opacity:0.08; }
+.rpt-header h2 { font-family:'Cairo',sans-serif; font-size:1.5rem; font-weight:900; margin-bottom:0.4rem; }
+.rpt-header p { font-size:0.88rem; opacity:0.72; }
+
+.f-card { background:white; border-radius:16px; border:1px solid var(--gray); padding:1.6rem; margin-bottom:1.3rem; }
+.f-card-title { font-family:'Cairo',sans-serif; font-size:1rem; font-weight:700; color:var(--navy); margin-bottom:1.2rem; padding-bottom:0.7rem; border-bottom:2px solid var(--gray); display:flex; align-items:center; gap:0.45rem; }
+.f-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:0.9rem; }
+.f-group { display:flex; flex-direction:column; gap:0.35rem; }
+.f-group.full { grid-column:1/-1; }
+label { font-size:0.82rem; font-weight:700; color:var(--navy); }
+.req { color:var(--danger); }
+input, select, textarea {
+  font-family:'Tajawal',sans-serif; font-size:0.9rem;
+  padding:0.65rem 0.9rem; border:1.5px solid var(--gray); border-radius:9px;
+  color:var(--navy); background:white; transition:all 0.2s; outline:none;
+  width:100%; direction:rtl;
+}
+input:focus, select:focus, textarea:focus { border-color:var(--royal); box-shadow:0 0 0 3px rgba(30,77,183,0.09); }
+textarea { resize:vertical; min-height:95px; }
+
+/* Severity */
+.sev-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:0.65rem; }
+.sev-opt { border:2px solid var(--gray); border-radius:11px; padding:0.85rem 0.4rem; text-align:center; cursor:pointer; transition:all 0.2s; background:white; }
+.sev-opt:hover { transform:translateY(-2px); }
+.sev-opt.sel { border-color:var(--royal); background:rgba(30,77,183,0.04); }
+.sev-em { font-size:1.4rem; display:block; margin-bottom:0.28rem; }
+.sev-lbl { font-size:0.76rem; font-weight:700; color:var(--navy); }
+.sev-sub2 { font-size:0.68rem; color:var(--text-muted); }
+
+/* Upload */
+.upload-zone { border:2px dashed var(--gray); border-radius:11px; padding:1.8rem; text-align:center; cursor:pointer; transition:all 0.2s; background:var(--gray-light); }
+.upload-zone:hover { border-color:var(--royal); background:rgba(30,77,183,0.03); }
+.upload-zone p { font-size:0.82rem; color:var(--text-muted); }
+.upload-zone strong { color:var(--royal); }
+
+/* Firebase status */
+.firebase-status { display:flex; align-items:center; gap:0.5rem; padding:0.7rem 1rem; border-radius:9px; font-size:0.82rem; font-weight:600; margin-bottom:1rem; }
+.fs-ok { background:rgba(26,122,74,0.08); border:1px solid rgba(26,122,74,0.2); color:var(--success); }
+.fs-config { background:rgba(201,162,39,0.1); border:1px solid rgba(201,162,39,0.25); color:#8a6a10; }
+.fs-error { background:rgba(176,48,48,0.08); border:1px solid rgba(176,48,48,0.2); color:var(--danger); }
+
+/* Success */
+.success-box { display:none; background:rgba(26,122,74,0.07); border:1.5px solid rgba(26,122,74,0.22); border-radius:13px; padding:1.4rem; text-align:center; margin-bottom:1.3rem; }
+.success-box.show { display:block; }
+.success-box .s-icon { font-size:2.2rem; margin-bottom:0.4rem; }
+.success-box h3 { font-family:'Cairo',sans-serif; font-size:1.05rem; font-weight:700; color:var(--success); }
+.success-box p { font-size:0.82rem; color:var(--text-muted); margin-top:0.25rem; }
+
+/* Actions */
+.f-actions { display:flex; gap:0.9rem; justify-content:flex-end; margin-top:1.3rem; }
+.btn-cancel { background:var(--gray); border:none; color:var(--text-muted); padding:0.7rem 1.8rem; border-radius:9px; font-family:'Tajawal',sans-serif; font-size:0.92rem; font-weight:600; cursor:pointer; transition:all 0.2s; }
+.btn-cancel:hover { background:#dde5f0; }
+.btn-submit { background:linear-gradient(135deg,var(--royal),var(--sky)); border:none; color:white; padding:0.7rem 2.3rem; border-radius:9px; font-family:'Tajawal',sans-serif; font-size:0.92rem; font-weight:700; cursor:pointer; box-shadow:0 5px 16px rgba(30,77,183,0.32); transition:all 0.2s; }
+.btn-submit:hover { transform:translateY(-2px); box-shadow:0 9px 22px rgba(30,77,183,0.42); }
+.btn-submit:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+
+/* ===== LOGIN ===== */
+.login-wrap { min-height:calc(100vh - 62px); background:linear-gradient(155deg,var(--navy),var(--blue) 60%,#0d1f3c); display:flex; align-items:center; justify-content:center; padding:1.5rem; position:relative; overflow:hidden; }
+.login-wrap::before { content:''; position:absolute; top:-120px; right:-120px; width:500px; height:500px; background:radial-gradient(circle,rgba(74,158,255,0.07) 0%,transparent 70%); border-radius:50%; }
+.login-card { background:white; border-radius:22px; padding:2.3rem; width:100%; max-width:400px; box-shadow:0 28px 70px rgba(0,0,0,0.32); position:relative; z-index:1; }
+.login-logo { text-align:center; margin-bottom:1.7rem; }
+.l-icon { width:58px; height:58px; background:linear-gradient(135deg,var(--royal),var(--sky)); border-radius:15px; display:flex; align-items:center; justify-content:center; font-size:1.7rem; margin:0 auto 0.7rem; box-shadow:0 7px 18px rgba(30,77,183,0.32); }
+.login-logo h2 { font-family:'Cairo',sans-serif; font-size:1.65rem; font-weight:900; color:var(--navy); }
+.login-logo h2 span { color:var(--royal); }
+.login-logo p { font-size:0.82rem; color:var(--text-muted); margin-top:0.18rem; }
+.tabs { display:grid; grid-template-columns:repeat(3,1fr); background:var(--gray-light); border-radius:11px; padding:3px; margin-bottom:1.7rem; }
+.tab { padding:0.52rem; border:none; border-radius:8px; background:transparent; font-family:'Tajawal',sans-serif; font-size:0.8rem; font-weight:700; color:var(--text-muted); cursor:pointer; transition:all 0.2s; }
+.tab.active { background:white; color:var(--royal); box-shadow:0 2px 7px rgba(0,0,0,0.09); }
+.l-group { margin-bottom:0.9rem; }
+.l-group label { display:block; font-size:0.82rem; font-weight:700; color:var(--navy); margin-bottom:0.35rem; }
+.i-wrap { position:relative; }
+.i-wrap input { padding-left:2.6rem; }
+.i-ico { position:absolute; left:0.85rem; top:50%; transform:translateY(-50%); font-size:0.95rem; pointer-events:none; }
+.forgot { display:block; text-align:left; color:var(--royal); font-size:0.8rem; font-weight:600; margin-top:0.28rem; cursor:pointer; }
+.btn-login-go { width:100%; background:linear-gradient(135deg,var(--royal),var(--sky)); border:none; color:white; padding:0.82rem; border-radius:11px; font-family:'Tajawal',sans-serif; font-size:0.97rem; font-weight:700; cursor:pointer; box-shadow:0 5px 16px rgba(30,77,183,0.32); transition:all 0.2s; margin-top:1.1rem; }
+.btn-login-go:hover { transform:translateY(-2px); }
+.l-divider { display:flex; align-items:center; gap:0.7rem; margin:1.1rem 0; color:var(--text-muted); font-size:0.78rem; }
+.l-divider::before,.l-divider::after { content:''; flex:1; height:1px; background:var(--gray); }
+.roles { display:grid; grid-template-columns:repeat(3,1fr); gap:0.55rem; }
+.role { border:2px solid var(--gray); border-radius:9px; padding:0.65rem 0.3rem; text-align:center; cursor:pointer; transition:all 0.2s; background:white; }
+.role:hover { border-color:var(--royal); }
+.role.sel { border-color:var(--royal); background:rgba(30,77,183,0.04); }
+.role .ri { font-size:1.25rem; display:block; margin-bottom:0.25rem; }
+.role .rl { font-size:0.7rem; font-weight:700; color:var(--navy); }
+.l-footer { text-align:center; margin-top:1.3rem; font-size:0.78rem; color:var(--text-muted); }
+.l-footer a { color:var(--royal); font-weight:700; cursor:pointer; }
+
+/* Footer */
+footer { background:var(--navy); color:rgba(255,255,255,0.45); text-align:center; padding:1.8rem; font-size:0.8rem; }
+footer strong { color:white; font-family:'Cairo',sans-serif; font-size:1rem; display:block; margin-bottom:0.3rem; }
+
+/* Responsive */
+@media(max-width:680px){
+  .stats-inner{grid-template-columns:repeat(2,1fr);}
+  .sidebar{display:none;}
+  .nav-links{display:none;}
+  .sev-grid{grid-template-columns:repeat(2,1fr);}
+  .kpi-row{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo" onclick="go('home')">
+    <div class="nav-logo-icon">🏗️</div>
+    <div class="nav-logo-text">إعمار<span>نا</span></div>
+  </div>
+  <ul class="nav-links">
+    <li><a onclick="go('home')" id="nl-home" class="active">الرئيسية</a></li>
+    <li><a onclick="go('dash')" id="nl-dash">لوحة التحكم</a></li>
+    <li><a onclick="go('report')" id="nl-report">الإبلاغ عن ضرر</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="btn-nav-outline" onclick="go('login')">دخول</button>
+    <button class="btn-nav-fill" onclick="go('login')">انضم للمنصة</button>
+  </div>
+</nav>
+
+<!-- ===== HOME ===== -->
+<div class="page active" id="page-home">
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="hero-badge">🇸🇩 منصة إعادة الإعمار — ولاية الخرطوم</div>
+      <h1>معاً نبني <span>إعمارنا</span></h1>
+      <p>منصة رقمية متكاملة تجمع الحكومة والمنظمات والمجتمع لتنسيق جهود إعادة إعمار السودان بكفاءة وشفافية.</p>
+      <div class="hero-btns">
+        <button class="btn-main" onclick="go('dash')">🗂️ استعرض المشاريع</button>
+        <button class="btn-outline" onclick="go('report')">📢 أبلغ عن ضرر</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stats-inner">
+      <div class="stat-item"><div class="stat-num">١٢٤</div><div class="stat-lbl">مشروع نشط</div></div>
+      <div class="stat-item"><div class="stat-num">٣٨</div><div class="stat-lbl">منظمة مسجلة</div></div>
+      <div class="stat-item"><div class="stat-num">٧٦٪</div><div class="stat-lbl">نسبة الإنجاز</div></div>
+      <div class="stat-item"><div class="stat-num">٩</div><div class="stat-lbl">أحياء مستفيدة</div></div>
+    </div>
+  </div>
+
+  <div class="section section-white">
+    <div class="section-inner">
+      <div class="sec-title">لماذا إعمارنا؟</div>
+      <div class="sec-sub">منصة شاملة تحل مشكلات التنسيق وتضمن الشفافية في كل مرحلة</div>
+      <div class="cards-3">
+        <div class="card"><div class="card-icon ic-blue">🏛️</div><h3>تنسيق مركزي</h3><p>بيئة رقمية موحدة تربط الحكومة والمنظمات والمجتمع للقضاء على ازدواجية الجهود.</p></div>
+        <div class="card"><div class="card-icon ic-green">🔍</div><h3>شفافية كاملة</h3><p>تتبع لحظي لجميع المشاريع والتمويل يُرسّخ الثقة ويُمكّن المساءلة الفعلية.</p></div>
+        <div class="card"><div class="card-icon ic-gold">📊</div><h3>بيانات ذكية</h3><p>لوحات تحليلية وخرائط تفاعلية تدعم صنع القرار الاستراتيجي بدقة عالية.</p></div>
+        <div class="card"><div class="card-icon ic-red">👥</div><h3>مشاركة مجتمعية</h3><p>آليات مباشرة لاستشارة السكان وتلقي تقاريرهم وتغذيتهم الراجعة بسهولة.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section section-navy">
+    <div class="section-inner">
+      <div class="sec-title sec-title-white">كيف تعمل المنصة؟</div>
+      <div class="sec-sub sec-sub-white">مسار عمل متكامل من الإبلاغ حتى إغلاق المشروع</div>
+      <div class="steps-grid">
+        <div class="step-card"><div class="step-num">١</div><h4>الإبلاغ</h4><p>يرفع المجتمع تقرير ضرر مع التحقق التلقائي</p></div>
+        <div class="step-card"><div class="step-num">٢</div><h4>المراجعة</h4><p>تراجع الحكومة البيانات وتحوّلها لمشروع رسمي</p></div>
+        <div class="step-card"><div class="step-num">٣</div><h4>التخطيط</h4><p>تتقدم المنظمات بخططها ويُخصص التمويل</p></div>
+        <div class="step-card"><div class="step-num">٤</div><h4>التنفيذ</h4><p>رفع تقارير دورية وتحديث الحالة لحظياً</p></div>
+        <div class="step-card"><div class="step-num">٥</div><h4>الإغلاق</h4><p>تقرير نهائي وإخطار المجتمع بالإنجاز</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section section-white">
+    <div class="section-inner">
+      <div class="sec-title">أصحاب المصلحة</div>
+      <div class="sec-sub">ثلاثة محاور تعمل معاً لتحقيق إعمار حقيقي ومستدام</div>
+      <div class="cards-3">
+        <div class="card" style="text-align:center;border-top:3px solid var(--royal)"><div style="font-size:2.3rem;margin-bottom:0.7rem">🏛️</div><h3>السلطات الحكومية</h3><p>لوحات مراقبة مركزية وتخصيص ميزانيات واعتماد المشاريع.</p></div>
+        <div class="card" style="text-align:center;border-top:3px solid var(--success)"><div style="font-size:2.3rem;margin-bottom:0.7rem">🌍</div><h3>المنظمات الدولية</h3><p>تسجيل المشاريع ورفع التقارير الميدانية وتنسيق التمويل.</p></div>
+        <div class="card" style="text-align:center;border-top:3px solid var(--gold)"><div style="font-size:2.3rem;margin-bottom:0.7rem">👨‍👩‍👧‍👦</div><h3>المجتمع المحلي</h3><p>الإبلاغ عن الأضرار وتتبع المشاريع وتقديم التغذية الراجعة.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <footer><strong>🏗️ منصة إعمارنا</strong>مشروع تخرج — جامعة كرري | كلية علوم الحاسوب | هندسة البرمجيات — ٢٠٢٥/٢٠٢٦</footer>
+</div>
+
+<!-- ===== DASHBOARD ===== -->
+<div class="page" id="page-dash">
+  <div class="dash-wrap">
+    <aside class="sidebar">
+      <div class="sb-sec">
+        <div class="sb-lbl">الرئيسية</div>
+        <div class="sb-link active">📊 نظرة عامة</div>
+        <div class="sb-link">🗂️ المشاريع</div>
+        <div class="sb-link">🗺️ الخريطة</div>
+        <div class="sb-link">💰 الميزانيات</div>
+      </div>
+      <div class="sb-sec">
+        <div class="sb-lbl">الإدارة</div>
+        <div class="sb-link">🏢 المنظمات</div>
+        <div class="sb-link" onclick="go('report')">📢 البلاغات <span class="notif-dot"></span></div>
+        <div class="sb-link">📈 التقارير</div>
+        <div class="sb-link">⚙️ الإعدادات</div>
+      </div>
+      <div class="sb-sec">
+        <div style="background:rgba(255,255,255,0.05);border-radius:9px;padding:0.85rem;border:1px solid rgba(255,255,255,0.07)">
+          <div style="font-size:0.72rem;color:rgba(255,255,255,0.38);margin-bottom:0.4rem">المستخدم الحالي</div>
+          <div style="font-size:0.88rem;font-weight:700;color:white">أحمد محمد علي</div>
+          <div style="font-size:0.72rem;color:var(--accent);margin-top:0.18rem">مسؤول حكومي</div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="dash-body">
+      <div class="dash-top">
+        <div>
+          <div class="dash-heading">لوحة التحكم</div>
+          <div class="dash-sub" id="dashDate">جاري التحميل...</div>
+        </div>
+        <button class="btn-nav-fill" onclick="go('report')">+ بلاغ جديد</button>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi kpi-b"><div class="kpi-top2"><div class="kpi-ico">🗂️</div><div class="kpi-badge up">↑ ١٢٪</div></div><div class="kpi-val">١٢٤</div><div class="kpi-lbl">إجمالي المشاريع</div><div class="mini-bar"><div class="mini-fill mf-b" style="width:76%"></div></div></div>
+        <div class="kpi kpi-g"><div class="kpi-top2"><div class="kpi-ico">✅</div><div class="kpi-badge up">↑ ٨٪</div></div><div class="kpi-val">٨٩</div><div class="kpi-lbl">مشاريع منجزة</div><div class="mini-bar"><div class="mini-fill mf-g" style="width:89%"></div></div></div>
+        <div class="kpi kpi-y"><div class="kpi-top2"><div class="kpi-ico">⚙️</div><div class="kpi-badge up">↑ ٥٪</div></div><div class="kpi-val">٢٧</div><div class="kpi-lbl">قيد التنفيذ</div><div class="mini-bar"><div class="mini-fill mf-y" style="width:55%"></div></div></div>
+        <div class="kpi kpi-r"><div class="kpi-top2"><div class="kpi-ico">📢</div><div class="kpi-badge" id="reportsBadge" style="background:rgba(176,48,48,0.1);color:var(--danger)">جاري...</div></div><div class="kpi-val" id="reportsCount">—</div><div class="kpi-lbl">بلاغات مسجلة</div><div class="mini-bar"><div class="mini-fill mf-r" id="reportsFill" style="width:5%"></div></div></div>
+      </div>
+
+      <!-- Reports from Firebase -->
+      <div class="tbl-card">
+        <div class="tbl-head">
+          <div class="tbl-title">📢 آخر البلاغات المسجلة <span id="fbStatus" style="font-size:0.72rem;font-weight:500;color:var(--text-muted);margin-right:0.5rem"></span></div>
+          <button class="btn-sm" onclick="loadDashReports()">🔄 تحديث</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>رقم البلاغ</th>
+                <th>نوع الضرر</th>
+                <th>الحي</th>
+                <th>مستوى الخطورة</th>
+                <th>مقدم البلاغ</th>
+                <th>الحالة</th>
+              </tr>
+            </thead>
+            <tbody id="reportsTableBody">
+              <tr class="loading-row"><td colspan="6">⏳ جاري تحميل البلاغات من قاعدة البيانات...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Static Projects -->
+      <div class="tbl-card">
+        <div class="tbl-head">
+          <div class="tbl-title">🗂️ المشاريع الجارية</div>
+          <button class="btn-sm">عرض الكل</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>المشروع</th><th>القطاع</th><th>المنظمة</th><th>الموقع</th><th>الحالة</th></tr></thead>
+            <tbody>
+              <tr><td><strong>إعادة تأهيل جسر النيل الأزرق</strong></td><td><span class="badge b-blue">بنية تحتية</span></td><td>اليونيسف</td><td>الخرطوم بحري</td><td><span class="badge b-green">✅ منجز</span></td></tr>
+              <tr><td><strong>ترميم مستشفى أم درمان التعليمي</strong></td><td><span class="badge b-red">صحة</span></td><td>منظمة الصحة العالمية</td><td>أم درمان</td><td><span class="badge b-gold">⚙️ جاري</span></td></tr>
+              <tr><td><strong>إعادة بناء مدرسة الثورة</strong></td><td><span class="badge b-gold">تعليم</span></td><td>اليونسكو</td><td>حي الثورة</td><td><span class="badge b-gold">⚙️ جاري</span></td></tr>
+              <tr><td><strong>استعادة شبكة مياه الشجرة</strong></td><td><span class="badge b-blue">مياه</span></td><td>الهلال الأحمر</td><td>الشجرة</td><td><span class="badge b-blue">📋 مراجعة</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== REPORT ===== -->
+<div class="page" id="page-report">
+  <div class="report-wrap">
+    <div class="rpt-header">
+      <h2>📢 الإبلاغ عن ضرر</h2>
+      <p>ساعدنا في توثيق الأضرار لتسريع إعادة الإعمار في منطقتك</p>
+    </div>
+
+    <div class="success-box" id="successBox">
+      <div class="s-icon">✅</div>
+      <h3>تم استلام بلاغك وحفظه بنجاح!</h3>
+      <p id="successId">رقم البلاغ: — | سيتم مراجعته خلال ٢٤-٤٨ ساعة</p>
+    </div>
+
+    <div class="firebase-status fs-config" id="fbStatusReport">
+      ⏳ جاري الاتصال بقاعدة البيانات...
+    </div>
+
+    <div class="f-card">
+      <div class="f-card-title">📍 معلومات الضرر الأساسية</div>
+      <div class="f-grid">
+        <div class="f-group">
+          <label>نوع البنية المتضررة <span class="req">*</span></label>
+          <select id="damageType">
+            <option value="">-- اختر النوع --</option>
+            <option>جسر أو طريق</option>
+            <option>مستشفى أو مركز صحي</option>
+            <option>مدرسة أو منشأة تعليمية</option>
+            <option>شبكة مياه أو صرف</option>
+            <option>محطة كهرباء</option>
+            <option>مبنى سكني</option>
+            <option>سوق أو منشأة تجارية</option>
+            <option>أخرى</option>
+          </select>
+        </div>
+        <div class="f-group">
+          <label>الحي / المنطقة <span class="req">*</span></label>
+          <select id="district">
+            <option value="">-- اختر الحي --</option>
+            <option>الخرطوم بحري</option>
+            <option>أم درمان</option>
+            <option>الشجرة</option>
+            <option>كافوري</option>
+            <option>حي الثورة</option>
+            <option>المنطقة الصناعية</option>
+            <option>حي العرب</option>
+            <option>أخرى</option>
+          </select>
+        </div>
+        <div class="f-group full">
+          <label>العنوان التفصيلي <span class="req">*</span></label>
+          <input type="text" id="address" placeholder="مثال: شارع المدرسة، بجانب مسجد النور">
+        </div>
+        <div class="f-group full">
+          <label>وصف الضرر <span class="req">*</span></label>
+          <textarea id="description" placeholder="صف الضرر بالتفصيل: ما الذي تضرر؟ متى حدث؟ كم شخص متضرر؟"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="f-card">
+      <div class="f-card-title">⚠️ مستوى الخطورة</div>
+      <div class="sev-grid">
+        <div class="sev-opt" onclick="pickSev(this,'منخفضة')"><span class="sev-em">🟢</span><div class="sev-lbl">منخفضة</div><div class="sev-sub2">أضرار طفيفة</div></div>
+        <div class="sev-opt sel" onclick="pickSev(this,'متوسطة')"><span class="sev-em">🟡</span><div class="sev-lbl">متوسطة</div><div class="sev-sub2">يؤثر على الخدمات</div></div>
+        <div class="sev-opt" onclick="pickSev(this,'حرجة')"><span class="sev-em">🔴</span><div class="sev-lbl">حرجة</div><div class="sev-sub2">خطر على الأرواح</div></div>
+      </div>
+    </div>
+
+    <div class="f-card">
+      <div class="f-card-title">👤 معلومات مقدم البلاغ</div>
+      <div class="f-grid">
+        <div class="f-group">
+          <label>الاسم الكامل <span class="req">*</span></label>
+          <input type="text" id="reporterName" placeholder="الاسم الثلاثي">
+        </div>
+        <div class="f-group">
+          <label>رقم الهاتف <span class="req">*</span></label>
+          <input type="tel" id="reporterPhone" placeholder="٠٩١٢ ٣٤٥ ٦٧٨">
+        </div>
+        <div class="f-group">
+          <label>الصفة</label>
+          <select id="reporterRole">
+            <option>مواطن</option>
+            <option>ممثل مجتمع</option>
+            <option>عامل إغاثي</option>
+            <option>موظف حكومي</option>
+          </select>
+        </div>
+        <div class="f-group">
+          <label>البريد الإلكتروني (اختياري)</label>
+          <input type="email" id="reporterEmail" placeholder="example@email.com">
+        </div>
+      </div>
+    </div>
+
+    <div class="f-actions">
+      <button class="btn-cancel" onclick="go('home')">إلغاء</button>
+      <button class="btn-submit" id="submitBtn" onclick="submitReport()">📤 إرسال البلاغ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== LOGIN ===== -->
+<div class="page" id="page-login">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="l-icon">🏗️</div>
+        <h2>إعمار<span>نا</span></h2>
+        <p>منصة إعادة الإعمار — ولاية الخرطوم</p>
+      </div>
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab(this)">🏛️ حكومة</button>
+        <button class="tab" onclick="switchTab(this)">🌍 منظمة</button>
+        <button class="tab" onclick="switchTab(this)">👥 مجتمع</button>
+      </div>
+      <div class="l-group">
+        <label>البريد الإلكتروني</label>
+        <div class="i-wrap"><span class="i-ico">📧</span><input type="email" placeholder="أدخل بريدك الإلكتروني"></div>
+      </div>
+      <div class="l-group">
+        <label>كلمة المرور</label>
+        <div class="i-wrap"><span class="i-ico">🔒</span><input type="password" placeholder="أدخل كلمة المرور"></div>
+        <a class="forgot">نسيت كلمة المرور؟</a>
+      </div>
+      <button class="btn-login-go" onclick="loginDemo()">تسجيل الدخول</button>
+      <div class="l-divider">أو اختر صفتك للتسجيل</div>
+      <div class="roles">
+        <div class="role sel"><span class="ri">🏛️</span><div class="rl">جهة حكومية</div></div>
+        <div class="role"><span class="ri">🌍</span><div class="rl">منظمة دولية</div></div>
+        <div class="role"><span class="ri">🤝</span><div class="rl">منظمة محلية</div></div>
+      </div>
+      <div class="l-footer">ليس لديك حساب؟ <a>تواصل مع الإدارة</a></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Navigation ──────────────────────────────────────────
+function go(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  const el = document.getElementById('nl-' + page);
+  if (el) el.classList.add('active');
+  window.scrollTo(0,0);
+  if (page === 'dash') loadDashReports();
+}
+
+// ── Date ─────────────────────────────────────────────────
+const d = new Date();
+document.getElementById('dashDate').textContent =
+  'آخر تحديث: ' + d.toLocaleDateString('ar-EG', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+// ── Severity picker ──────────────────────────────────────
+let selectedSeverity = 'متوسطة';
+function pickSev(el, val) {
+  document.querySelectorAll('.sev-opt').forEach(o => o.classList.remove('sel'));
+  el.classList.add('sel');
+  selectedSeverity = val;
+}
+
+// ── Login tabs ───────────────────────────────────────────
+function switchTab(btn) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function loginDemo() {
+  alert('✅ تم تسجيل الدخول بنجاح!\nجاري التوجيه للوحة التحكم...');
+  go('dash');
+}
+
+// ── Firebase status ──────────────────────────────────────
+function setFbStatus(ok) {
+  const el = document.getElementById('fbStatusReport');
+  if (ok) {
+    el.className = 'firebase-status fs-ok';
+    el.textContent = '✅ متصل بقاعدة البيانات — البلاغات ستُحفظ فعلياً';
+  } else {
+    el.className = 'firebase-status fs-config';
+    el.textContent = '⚙️ تحتاج لضبط Firebase — راجع ملف SETUP.md لتفعيل الحفظ الفعلي';
+  }
+}
+
+// ── Submit report ────────────────────────────────────────
+async function submitReport() {
+  const damageType   = document.getElementById('damageType').value;
+  const district     = document.getElementById('district').value;
+  const address      = document.getElementById('address').value.trim();
+  const description  = document.getElementById('description').value.trim();
+  const reporterName = document.getElementById('reporterName').value.trim();
+  const reporterPhone= document.getElementById('reporterPhone').value.trim();
+
+  if (!damageType || !district || !address || !description || !reporterName || !reporterPhone) {
+    alert('⚠️ يرجى ملء جميع الحقول الإلزامية المُعلّمة بـ *');
+    return;
+  }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ جاري الإرسال...';
+
+  const data = {
+    damageType, district, address, description,
+    severity: selectedSeverity,
+    reporterName, reporterPhone,
+    reporterRole : document.getElementById('reporterRole').value,
+    reporterEmail: document.getElementById('reporterEmail').value,
+  };
+
+  let reportId = 'BLG-' + Date.now();
+
+  if (window.saveReport) {
+    const res = await window.saveReport(data);
+    if (res.success) {
+      reportId = res.id.substring(0,8).toUpperCase();
+    }
+  }
+
+  document.getElementById('successId').textContent =
+    'رقم البلاغ: #' + reportId + ' | سيتم مراجعته خلال ٢٤-٤٨ ساعة';
+  document.getElementById('successBox').classList.add('show');
+  window.scrollTo(0,0);
+
+  btn.disabled = false;
+  btn.textContent = '📤 إرسال البلاغ';
+}
+
+// ── Load reports in dashboard ────────────────────────────
+async function loadDashReports() {
+  const tbody = document.getElementById('reportsTableBody');
+  const fbStat = document.getElementById('fbStatus');
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="6">⏳ جاري التحميل...</td></tr>';
+
+  if (!window.loadReports) {
+    fbStat.textContent = '(يحتاج ضبط Firebase)';
+    tbody.innerHTML = `
+      <tr class="loading-row">
+        <td colspan="6">
+          ⚙️ لم يتم ضبط Firebase بعد.<br>
+          <span style="font-size:0.78rem;color:var(--text-muted)">راجع ملف SETUP.md لتفعيل الحفظ الفعلي للبلاغات</span>
+        </td>
+      </tr>`;
+    document.getElementById('reportsCount').textContent = '—';
+    return;
+  }
+
+  const reports = await window.loadReports();
+  fbStat.textContent = '✅ Firebase متصل';
+
+  document.getElementById('reportsCount').textContent = reports.length;
+  document.getElementById('reportsBadge').textContent = reports.length + ' بلاغ';
+  document.getElementById('reportsFill').style.width = Math.min(reports.length * 10, 100) + '%';
+
+  if (reports.length === 0) {
+    tbody.innerHTML = '<tr class="loading-row"><td colspan="6">لا توجد بلاغات بعد. كن أول من يُبلّغ!</td></tr>';
+    return;
+  }
+
+  const sevClass = { 'منخفضة': 'b-green', 'متوسطة': 'b-gold', 'حرجة': 'b-red' };
+  const sevIcon  = { 'منخفضة': '🟢', 'متوسطة': '🟡', 'حرجة': '🔴' };
+
+  tbody.innerHTML = reports.map((r, i) => `
+    <tr>
+      <td><strong>#${r.id.substring(0,8).toUpperCase()}</strong></td>
+      <td>${r.damageType || '—'}</td>
+      <td>${r.district || '—'}</td>
+      <td><span class="badge ${sevClass[r.severity] || 'b-gray'}">${sevIcon[r.severity] || ''} ${r.severity || '—'}</span></td>
+      <td>${r.reporterName || '—'}</td>
+      <td><span class="badge b-gold">⏳ قيد المراجعة</span></td>
+    </tr>
+  `).join('');
+}
+
+// ── Firebase ready event ─────────────────────────────────
+document.addEventListener('firebaseReady', () => {
+  setFbStatus(true);
+  loadDashReports();
+});
+
+// Default status (before Firebase loads)
+setFbStatus(false);
+</script>
+</body>
+</html>
